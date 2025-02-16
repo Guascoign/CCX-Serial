@@ -10,7 +10,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QMessageBox>
-#include "wave.h"
+#include <qcustomplot.h>
 
 #define TIMEOUT1S 1000
 #define TIMEOUT2S 2000
@@ -20,6 +20,9 @@ namespace Ui {
 class Widget;
 }
 QT_END_NAMESPACE
+
+
+class CustomPlot; // 前向声明
 
 class Widget : public QWidget
 {
@@ -47,10 +50,8 @@ private slots:
     void RcvData(QByteArray RecvBuff);
     void on_Auto_roll_pushButton_clicked();//自动滚动信号槽
     void updateInfoLabel(const QString &errorMessage);//串口错误信号上报槽
-    void on_hide_wave_pushButton_clicked();//隐藏波形信号槽
-    void on_show_wave_pushButton_clicked();//显示波形信号槽
-    void on_generate_wave_pushButton_clicked();//生成波形信号槽
-    void on_delete_wave_pushButton_clicked();//删除波形信号槽
+    void setupRealtimeDataDemo(QCustomPlot *customPlot); // 添加生成波形函数槽
+    void realtimeDataSlot();
 signals:
     void SendData(QByteArray data);
 private:
@@ -79,6 +80,7 @@ private:
     bool recv_format_Flag = false;//接收格式化标志
     bool send_format_Flag = false;//发送格式化标志
     /********图表*********/
-    Wave *wave;
+    CustomPlot *customPlot; // 添加 customPlot 成员变量
+    QTimer dataTimer;
 };
 #endif // WIDGET_H

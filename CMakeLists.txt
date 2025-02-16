@@ -37,10 +37,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         Code/ncombobox.cpp Code/ncombobox.h
         Code/serialport.cpp Code/serialport.h
-        Code/chart.cpp Code/chart.h
-        Code/chartview.cpp Code/chartview.h
+        Code/customplot.cpp Code/customplot.h
+        Code/refreshthread.cpp Code/refreshthread.h
         External/qcustomplot.cpp External/qcustomplot.h
-        Code/wave.cpp Code/wave.h
         Resources/res.qrc
     )
 

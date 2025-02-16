@@ -1,8 +1,6 @@
 #include "widget.h"
 #include "ncombobox.h"
 #include "./ui_widget.h"
-#include "chart.h"
-#include "chartview.h"
 #include <QDateTime>
 #include <QLineSeries>
 #include <QMainWindow>
@@ -10,10 +8,11 @@
 #include <QtMath>
 #include <QValueAxis>
 #include <QSerialPortInfo>
-#include "wave.h"
 #include <QStandardItemModel>
 #include <QInputDialog>
 #include <qcustomplot.h>
+#include "customplot.h"
+#include "refreshthread.h"
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -58,213 +57,52 @@ void Widget::System_Init()
     animateProgressBar(20, 30, 100);
 
 //---------------------图表初始化----------------------
-Wave *wave = new Wave(); // 确保使用指针
-ui->Wave_ChartView->setRenderHint(QPainter::Antialiasing);// 设置抗锯齿
-ui->period_lineEdit->setText("10");
-ui->amplitude_lineEdit->setText("1");
-ui->length_lineEdit->setText("10");
-ui->noiseLevel_lineEdit->setText("0");
-QStandardItemModel *model = new QStandardItemModel(this);
-ui->show_columnView->setModel(model); // 设置模型
-
-animateProgressBar(30, 100, 100);
+    setupRealtimeDataDemo(ui->Wave_ChartView);
+    animateProgressBar(30, 100, 100);
 }
 
-
-// 生成波形
-void Widget::on_generate_wave_pushButton_clicked()
+void Widget::setupRealtimeDataDemo(QCustomPlot *customPlot)
 {
-    // 获取用户输入
-    QString waveType = ui->waveType_comboBox->currentText(); // 获取波形类型
-    double period = ui->period_lineEdit->text().toDouble(); // 获取周期
-    double amplitude = ui->amplitude_lineEdit->text().toDouble(); // 获取幅度
-    double length = ui->length_lineEdit->text().toDouble(); // 获取长度
-    double noiseLevel = ui->noiseLevel_lineEdit->text().toDouble(); // 获取噪声级别
-
-    // 计算当前波形数量
-    int totalWaveCount = 0;
-    QStandardItemModel *showModel = qobject_cast<QStandardItemModel*>(ui->show_columnView->model());
-    QStandardItemModel *hideModel = qobject_cast<QStandardItemModel*>(ui->hide_columnView->model());
-
-    if (showModel) {
-        totalWaveCount += showModel->rowCount(); // 添加 show_columnView 的数量
-    }
-    if (hideModel) {
-        totalWaveCount += hideModel->rowCount(); // 添加 hide_columnView 的数量
-    }
-
-    // 弹出输入框获取波形名称
-    bool ok;
-    QString seriesName = QInputDialog::getText(this, tr("输入波形名称"),
-                                                 tr("波形名称:"), QLineEdit::Normal,
-                                                 QString("波形%1").arg(totalWaveCount + 1), &ok);
-    if (!ok || seriesName.isEmpty()) {
-        ui->info_label->setText("未输入波形名称！"); // 显示提示信息
-        return; // 如果用户取消或输入为空，则返回
-    }
-
-    // 检查是否重名
-    QString originalName = seriesName;
-    int suffix = 1;
-    while (showModel && (showModel->findItems(seriesName).size() > 0 || (hideModel && hideModel->findItems(seriesName).size() > 0))) {
-        seriesName = QString("%1_%2").arg(originalName).arg(suffix++);
-    }
-
-    // 检查其他输入是否有效
-    if (period <= 0) {
-        ui->info_label->setText("未输入有效的周期！");
-        return;
-    }
-    if (amplitude <= 0) {
-        ui->info_label->setText("未输入有效的幅度！");
-        return;
-    }
-    if (length <= 0) {
-        ui->info_label->setText("未输入有效的长度！");
-        return;
-    }
-    if (noiseLevel < 0) {
-        ui->info_label->setText("未输入有效的噪声级别！");
-        return;
-    }
-
-    // 生成波形
-    QLineSeries* newSeries = wave->Series_Create(waveType, period, length, noiseLevel, amplitude); // 生成波形
-    wave->add_chart(ui->Wave_ChartView->chart(), newSeries, seriesName); // 将波形添加到图表并设置名称
-
-    // 更新模型
-    if (showModel) {
-        showModel->appendRow(new QStandardItem(seriesName)); // 将新波形名称添加到模型
-    }
-    ui->info_label->setText(QString("%1 生成！").arg(seriesName));
-    // 输出调试信息
-    qDebug() << "生成波形:" << seriesName;
+    static QTime timeStart = QTime::currentTime(); // 初始化时间
+    customPlot->addGraph(); // blue line
+    customPlot->graph(0)->setPen(QPen(QColor(40, 110, 255)));
+    customPlot->addGraph(); // red line
+    customPlot->graph(1)->setPen(QPen(QColor(255, 110, 40)));
+  
+    QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
+    timeTicker->setTimeFormat("%h:%m:%s");
+    customPlot->xAxis->setTicker(timeTicker);
+    customPlot->axisRect()->setupFullAxesBox();
+    customPlot->yAxis->setRange(-1.2, 1.2);
+    // make left and bottom axes transfer their ranges to right and top axes:
+    connect(customPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->xAxis2, SLOT(setRange(QCPRange)));
+    connect(customPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->yAxis2, SLOT(setRange(QCPRange)));
+  
+    // setup a timer that repeatedly calls MainWindow::realtimeDataSlot:
+    connect(&dataTimer, SIGNAL(timeout()), this, SLOT(realtimeDataSlot()));
+    dataTimer.start(0); // Interval 0 means to refresh as fast as possible
 }
 
-//删除波形
-void Widget::on_delete_wave_pushButton_clicked()
+void Widget::realtimeDataSlot()
 {
-    // 获取 show_columnView 的模型
-    QStandardItemModel *showModel = qobject_cast<QStandardItemModel*>(ui->show_columnView->model());
-    if (showModel) {
-        // 获取选中的项
-        QModelIndexList selectedIndexes = ui->show_columnView->selectionModel()->selectedIndexes();
-        for (const QModelIndex &index : selectedIndexes) {
-            if (index.isValid()) {
-                QString chartName = showModel->item(index.row())->text(); // 获取选中的图表名称
+  static QTime timeStart = QTime::currentTime();
+  // calculate two new data points:
+  double key = timeStart.msecsTo(QTime::currentTime())/1000.0; // time elapsed since start of demo, in seconds
+  static double lastPointKey = 0;
+  if (key-lastPointKey > 0.002) // at most add point every 2 ms
+  {
+    // add data to lines:
+    ui->Wave_ChartView->graph(0)->addData(key, qSin(key)+std::rand()/(double)RAND_MAX*1*qSin(key/0.3843));
+    ui->Wave_ChartView->graph(1)->addData(key, qCos(key)+std::rand()/(double)RAND_MAX*0.5*qSin(key/0.4364));
+    // rescale value (vertical) axis to fit the current data:
+    //ui->customPlot->graph(0)->rescaleValueAxis();
+    //ui->customPlot->graph(1)->rescaleValueAxis(true);
+    lastPointKey = key;
+  }
+//   // make key axis range scroll with the data (at a constant range size of 8):
+//   ui->Wave_ChartView->xAxis->setRange(key, 8, Qt::AlignRight);
+//   ui->Wave_ChartView->replot();
 
-                // 删除对应的波形
-                for (auto series : ui->Wave_ChartView->chart()->series()) {
-                    if (series->name() == chartName) {
-                        series->setVisible(false); // 隐藏波形
-                        break; // 找到并隐藏后退出循环
-                    }
-                }
-
-                // 从 show_columnView 中移除选中的项
-                showModel->removeRow(index.row());
-                ui->info_label->setText(QString("%1 已删除").arg(chartName));
-            }
-        }
-    }
-
-    // 如果需要从 hide_columnView 中删除
-    QStandardItemModel *hideModel = qobject_cast<QStandardItemModel*>(ui->hide_columnView->model());
-    if (hideModel) {
-        QModelIndexList selectedHideIndexes = ui->hide_columnView->selectionModel()->selectedIndexes();
-        for (const QModelIndex &index : selectedHideIndexes) {
-            if (index.isValid()) {
-                QString chartName = hideModel->item(index.row())->text(); // 获取选中的图表名称
-
-                // 删除对应的波形
-                for (auto series : ui->Wave_ChartView->chart()->series()) {
-                    if (series->name() == chartName) {
-                        series->setVisible(false); // 隐藏波形
-                        break; // 找到并隐藏后退出循环
-                    }
-                }
-
-                // 从 hide_columnView 中移除选中的项
-                hideModel->removeRow(index.row());
-                ui->info_label->setText(QString("%1 已删除").arg(chartName));
-            }
-        }
-    }
-}
-
-// 隐藏波形
-void Widget::on_hide_wave_pushButton_clicked()
-{
-    // 获取 show_columnView 的模型
-    QStandardItemModel *model = qobject_cast<QStandardItemModel*>(ui->show_columnView->model());
-    if (model) {
-        // 获取 hide_columnView 的模型
-        QStandardItemModel *hideModel = qobject_cast<QStandardItemModel*>(ui->hide_columnView->model());
-        if (!hideModel) {
-            hideModel = new QStandardItemModel(this); // 如果没有模型，则创建一个
-            ui->hide_columnView->setModel(hideModel);
-        }
-
-        // 获取选中的项
-        QModelIndexList selectedIndexes = ui->show_columnView->selectionModel()->selectedIndexes();
-        for (const QModelIndex &index : selectedIndexes) {
-            if (index.isValid()) {
-                QString chartName = model->item(index.row())->text(); // 获取选中的图表名称
-
-                // 隐藏对应的波形
-                for (auto series : ui->Wave_ChartView->chart()->series()) {
-                    if (series->name() == chartName) {
-                        series->setVisible(false); // 隐藏波形
-                        ui->info_label->setText(QString("%1 已隐藏").arg(chartName)); // 打印隐藏的波形名称
-                        break; // 找到并隐藏后退出循环
-                    }
-                }
-
-                // 从 show_columnView 中移除选中的项
-                model->removeRow(index.row());
-
-                // 将选中的项添加到 hide_columnView
-                hideModel->appendRow(new QStandardItem(chartName)); // 添加到 hide_columnView 的模型
-            }
-        }
-    }
-}
-
-//显示波形
-void Widget::on_show_wave_pushButton_clicked()
-{
-    // 获取 hide_columnView 的模型
-    QStandardItemModel *hideModel = qobject_cast<QStandardItemModel*>(ui->hide_columnView->model());
-    if (hideModel) {
-        // 获取 show_columnView 的模型
-        QStandardItemModel *showModel = qobject_cast<QStandardItemModel*>(ui->show_columnView->model());
-        if (!showModel) {
-            showModel = new QStandardItemModel(this); // 如果没有模型，则创建一个
-            ui->show_columnView->setModel(showModel);
-        }
-
-        // 获取选中的项
-        QModelIndexList selectedIndexes = ui->hide_columnView->selectionModel()->selectedIndexes();
-        for (const QModelIndex &index : selectedIndexes) {
-            if (index.isValid()) {
-                QString chartName = hideModel->item(index.row())->text(); // 获取选中的图表名称
-
-                // 显示对应的波形
-                for (auto series : ui->Wave_ChartView->chart()->series()) {
-                    if (series->name() == chartName) {
-                        series->setVisible(true); // 显示波形
-                        break; // 找到并显示后退出循环
-                    }
-                }
-
-                // 从 hide_columnView 中移除选中的项
-                hideModel->removeRow(index.row());
-
-                // 将选中的项添加到 show_columnView
-                showModel->appendRow(new QStandardItem(chartName)); // 添加到 show_columnView 的模型
-            }
-        }
-    }
 }
 
 void Widget::on_Serial_number_comboBox_clicked()
