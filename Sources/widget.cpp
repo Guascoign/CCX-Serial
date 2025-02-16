@@ -22,6 +22,7 @@ Widget::Widget(QWidget *parent)
     this->setLayout(ui->gridLayoutGlobal);//布局缩放绑定
 
     System_Init();//系统初始化
+    dataTimer.start(1000); // 每秒更新一次图表
 }
 
 Widget::~Widget()
@@ -57,53 +58,17 @@ void Widget::System_Init()
     animateProgressBar(20, 30, 100);
 
 //---------------------图表初始化----------------------
-    setupRealtimeDataDemo(ui->Wave_ChartView);
+    //ui->Wave_ChartView
+    
+    ui->Wave_ChartView->addGraph(); // graph 0
+    ui->Wave_ChartView->addGraph(); // graph 1
+    ui->Wave_ChartView->xAxis->setLabel("Time (s)");
+    ui->Wave_ChartView->yAxis->setLabel("Value");
+
     animateProgressBar(30, 100, 100);
 }
 
-void Widget::setupRealtimeDataDemo(QCustomPlot *customPlot)
-{
-    static QTime timeStart = QTime::currentTime(); // 初始化时间
-    customPlot->addGraph(); // blue line
-    customPlot->graph(0)->setPen(QPen(QColor(40, 110, 255)));
-    customPlot->addGraph(); // red line
-    customPlot->graph(1)->setPen(QPen(QColor(255, 110, 40)));
-  
-    QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
-    timeTicker->setTimeFormat("%h:%m:%s");
-    customPlot->xAxis->setTicker(timeTicker);
-    customPlot->axisRect()->setupFullAxesBox();
-    customPlot->yAxis->setRange(-1.2, 1.2);
-    // make left and bottom axes transfer their ranges to right and top axes:
-    connect(customPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->xAxis2, SLOT(setRange(QCPRange)));
-    connect(customPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->yAxis2, SLOT(setRange(QCPRange)));
-  
-    // setup a timer that repeatedly calls MainWindow::realtimeDataSlot:
-    connect(&dataTimer, SIGNAL(timeout()), this, SLOT(realtimeDataSlot()));
-    dataTimer.start(0); // Interval 0 means to refresh as fast as possible
-}
 
-void Widget::realtimeDataSlot()
-{
-  static QTime timeStart = QTime::currentTime();
-  // calculate two new data points:
-  double key = timeStart.msecsTo(QTime::currentTime())/1000.0; // time elapsed since start of demo, in seconds
-  static double lastPointKey = 0;
-  if (key-lastPointKey > 0.002) // at most add point every 2 ms
-  {
-    // add data to lines:
-    ui->Wave_ChartView->graph(0)->addData(key, qSin(key)+std::rand()/(double)RAND_MAX*1*qSin(key/0.3843));
-    ui->Wave_ChartView->graph(1)->addData(key, qCos(key)+std::rand()/(double)RAND_MAX*0.5*qSin(key/0.4364));
-    // rescale value (vertical) axis to fit the current data:
-    //ui->customPlot->graph(0)->rescaleValueAxis();
-    //ui->customPlot->graph(1)->rescaleValueAxis(true);
-    lastPointKey = key;
-  }
-//   // make key axis range scroll with the data (at a constant range size of 8):
-//   ui->Wave_ChartView->xAxis->setRange(key, 8, Qt::AlignRight);
-//   ui->Wave_ChartView->replot();
-
-}
 
 void Widget::on_Serial_number_comboBox_clicked()
 {
@@ -187,7 +152,26 @@ void Widget::RcvData(QByteArray RecvBuff)
     ui->recv_textEdit->moveCursor(QTextCursor::End);
     dataRxNumber += RecvBuff.length();
     ui->Rx_label->setText(QString("Rx: %1 bytes").arg(dataRxNumber));
+
+    // 解析接收到的数据并更新图表 格式data0,data1
+    QStringList dataList = stringdata.split(",");
+    if (dataList.size() == 2) {
+        bool ok0, ok1;
+        double data0 = dataList[0].toDouble(&ok0);
+        double data1 = dataList[1].toDouble(&ok1);
+        if (ok0 && ok1) {
+            double key = QDateTime::currentDateTime().toSecsSinceEpoch(); // x轴为时间（秒）
+            ui->Wave_ChartView->graph(0)->addData(key, data0);
+            ui->Wave_ChartView->graph(1)->addData(key, data1);
+            ui->Wave_ChartView->xAxis->setRange(key - 10, key); // 显示最近60秒的数据
+            ui->Wave_ChartView->replot();
+        }
+    }
+
     RecvBuff.clear();
+
+    
+
 }
 
 // 发送数据
@@ -410,3 +394,5 @@ void Widget::on_Auto_roll_pushButton_clicked()
         ui->Auto_roll_pushButton->setText("无滚动");
     }
 }
+
+

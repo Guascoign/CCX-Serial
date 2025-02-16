@@ -11,6 +11,7 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include <qcustomplot.h>
+#include "refreshthread.h"
 
 #define TIMEOUT1S 1000
 #define TIMEOUT2S 2000
@@ -50,8 +51,6 @@ private slots:
     void RcvData(QByteArray RecvBuff);
     void on_Auto_roll_pushButton_clicked();//自动滚动信号槽
     void updateInfoLabel(const QString &errorMessage);//串口错误信号上报槽
-    void setupRealtimeDataDemo(QCustomPlot *customPlot); // 添加生成波形函数槽
-    void realtimeDataSlot();
 signals:
     void SendData(QByteArray data);
 private:
@@ -82,5 +81,6 @@ private:
     /********图表*********/
     CustomPlot *customPlot; // 添加 customPlot 成员变量
     QTimer dataTimer;
+    RefreshThread *refreshThread; // 添加刷新线程成员变量
 };
 #endif // WIDGET_H

@@ -13,13 +13,13 @@ public:
     explicit RefreshThread(CustomPlot *plot, int interval, QObject *parent = nullptr);
     void run() override;
     void stop();
-    void setTrackingMode(int mode); // 使用整数代替枚举
+    void setTrackingMode(int mode); 
 
 private:
     CustomPlot *m_plot;
     int m_interval;
     bool m_running;
-    int m_trackingMode; // 使用整数代替枚举
+    int m_trackingMode;
 };
 
 #endif // REFRESHTHREAD_H
