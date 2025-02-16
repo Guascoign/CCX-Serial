@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>493</width>
-    <height>176</height>
+    <width>889</width>
+    <height>422</height>
    </rect>
   </property>
   <property name="font">
@@ -19,7 +19,7 @@
    <string>ZM's COM</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="res.qrc">
+   <iconset resource="../Resources/res.qrc">
     <normaloff>:/ICON/ico_128x_yellow.png</normaloff>:/ICON/ico_128x_yellow.png</iconset>
   </property>
   <widget class="QWidget" name="layoutWidget">
@@ -380,7 +380,7 @@
           <enum>QTabWidget::North</enum>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>3</number>
          </property>
          <property name="tabBarAutoHide">
           <bool>false</bool>
@@ -1109,7 +1109,7 @@
           </attribute>
           <layout class="QGridLayout" name="gridLayout_12">
            <item row="0" column="0">
-            <widget class="ChartView" name="PID_ChartView" native="true"/>
+            <widget class="QCustomPlot" name="PID_ChartView" native="true"/>
            </item>
           </layout>
          </widget>
@@ -1587,9 +1587,15 @@
    <header location="global">chartview.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header location="global">qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources>
-  <include location="res.qrc"/>
+  <include location="../Resources/res.qrc"/>
  </resources>
  <connections/>
 </ui>

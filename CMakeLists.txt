@@ -10,17 +10,24 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${CMAKE_SOURCE_DIR}) 
+include_directories(${CMAKE_SOURCE_DIR}/Code)
+include_directories(${CMAKE_SOURCE_DIR}/Sources)
+include_directories(${CMAKE_SOURCE_DIR}/External)
+include_directories(${CMAKE_SOURCE_DIR}/Resources)
+
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 COMPONENTS SerialPort REQUIRED)#串口
 find_package(Qt6 COMPONENTS Charts REQUIRED)#图表
+find_package(Qt6 REQUIRED COMPONENTS PrintSupport)#qcustomplot
 
 
 set(PROJECT_SOURCES
-        main.cpp
-        widget.cpp  widget.h
-        widget.ui
+Sources/main.cpp
+Sources/widget.cpp
+Sources/widget.h
+Sources/widget.ui
 
 )
 
@@ -28,14 +35,16 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(COM
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        ncombobox.h ncombobox.cpp
-        serialport.cpp  serialport.h
-        ncombobox.h ncombobox.cpp
-        chart.h chart.cpp
-        chartview.h chartview.cpp
-        wave.h wave.cpp
-        res.qrc
+        Code/ncombobox.cpp Code/ncombobox.h
+        Code/serialport.cpp Code/serialport.h
+        Code/chart.cpp Code/chart.h
+        Code/chartview.cpp Code/chartview.h
+        External/qcustomplot.cpp External/qcustomplot.h
+        Code/wave.cpp Code/wave.h
+        Resources/res.qrc
     )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET COM APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
@@ -54,6 +63,7 @@ else()
     endif()
 endif()
 
+target_link_libraries(COM PRIVATE Qt6::PrintSupport)#qcustomplot
 target_link_libraries(COM PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(COM PRIVATE Qt6::SerialPort)
 target_link_libraries(COM PRIVATE Qt6::Charts)

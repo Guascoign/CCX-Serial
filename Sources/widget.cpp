@@ -13,6 +13,7 @@
 #include "wave.h"
 #include <QStandardItemModel>
 #include <QInputDialog>
+#include <qcustomplot.h>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -32,6 +33,7 @@ Widget::~Widget()
 // 系统初始化
 void Widget::System_Init()
 {
+    qDebug() << "Qt version:" << QT_VERSION_STR;
 //----------------------时间初始化----------------------
     Update_RTC();//更新时间,打开定时器
     // 设置定时器每秒更新一次时间
