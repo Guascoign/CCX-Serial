@@ -1,3 +1,11 @@
+/********************************************************************************
+    * 文件名称 customplot.cpp
+    * 版     本：V1.0
+    * 编写日期 ：2025-02-18
+    * 功     能：重写QCustmPlot
+*********************************************************************************
+V1.0 2025-02-18 First release @ZM
+*********************************************************************************/
 #include "customplot.h"
 #include "plotthread.h"
 #include <QKeyEvent>
@@ -19,11 +27,6 @@ CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnable
     setInteraction(QCP::iSelectLegend, true); // 启用选择图例
 
     legend->setVisible(true); // 默认显示图例
-    // 设置x轴和y轴标签字体大小
-    QFont labelFont = xAxis->labelFont();
-    labelFont.setPointSize(12); // 设置字体大小为12
-    xAxis->setLabelFont(labelFont);
-    yAxis->setLabelFont(labelFont);
     
     toggleGraphNameAction = new QAction("隐藏图例", this);
     connect(toggleGraphNameAction, &QAction::triggered, [this]() {
@@ -65,7 +68,7 @@ CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnable
     tracer->setStyle(QCPItemTracer::tsCircle);
     tracer->setPen(QPen(Qt::red));
     tracer->setBrush(Qt::red);
-    tracer->setSize(7);
+    tracer->setSize(8);
 
     verticalLine = new QCPItemLine(this);
     verticalLine->setVisible(false);
@@ -148,11 +151,11 @@ CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnable
     QAction *mode5sAction = trackModeMenu->addAction("只显示最后5s");
     QAction *mode10sAction = trackModeMenu->addAction("只显示最后10s");
 
-    connect(modeNoneAction, &QAction::triggered, [this]() { setTrackingMode(Mode_None); });
-    connect(modeAllAction, &QAction::triggered, [this]() { setTrackingMode(Mode_All); });
-    connect(mode2sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_2s); });
-    connect(mode5sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_5s); });
-    connect(mode10sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_10s); });
+    connect(modeNoneAction, &QAction::triggered, [this]() { setTrackingMode(Mode_None); setInteraction(QCP::iRangeZoom, true); });
+    connect(modeAllAction, &QAction::triggered, [this]() { setTrackingMode(Mode_All);  setInteraction(QCP::iRangeZoom, false); });
+    connect(mode2sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_2s);  setInteraction(QCP::iRangeZoom, true); });
+    connect(mode5sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_5s); setInteraction(QCP::iRangeZoom, true); });
+    connect(mode10sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_10s); setInteraction(QCP::iRangeZoom, true); });
     
 }
 
@@ -353,6 +356,7 @@ void CustomPlot::setRefreshRate(Refresh_rate rate)
 {
     this->rate = rate;
     emit refreshRateChanged(this);
+    qDebug() << "setRefreshRate触发" << this ;
 }
 
 void CustomPlot::setTrackingMode(Track_mode mode)

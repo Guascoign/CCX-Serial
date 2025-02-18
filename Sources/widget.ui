@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>801</width>
-    <height>513</height>
+    <width>377</width>
+    <height>345</height>
    </rect>
   </property>
   <property name="font">
@@ -367,11 +367,7 @@
       <property name="title">
        <string/>
       </property>
-      <layout class="QGridLayout" name="gridLayout_6">
-       <item row="1" column="0">
-        <widget class="CustomPlot" name="Wave_ChartView" native="true"/>
-       </item>
-      </layout>
+      <layout class="QGridLayout" name="gridLayout_6"/>
      </widget>
     </item>
     <item row="1" column="0" colspan="2">
@@ -839,6 +835,9 @@
          </item>
         </layout>
        </item>
+       <item row="6" column="0">
+        <widget class="QListWidget" name="listWidget"/>
+       </item>
       </layout>
      </widget>
     </item>
@@ -850,12 +849,6 @@
    <class>NComboBox</class>
    <extends>QComboBox</extends>
    <header location="global">ncombobox.h</header>
-  </customwidget>
-  <customwidget>
-   <class>CustomPlot</class>
-   <extends>QWidget</extends>
-   <header location="global">customplot.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

@@ -1,9 +1,16 @@
+/********************************************************************************
+    * 文件名称 plotthread.cpp
+    * 版     本：V1.0
+    * 编写日期 ：2025-02-18
+    * 功     能：图表刷新线程
+*********************************************************************************
+V1.0 2025-02-18 First release @ZM
+*********************************************************************************/
 #include "plotthread.h"
-
-
 
 PlotThread::PlotThread(QObject *parent) : QThread(parent)
 {
+    
 }
 
 void PlotThread::addPlot(CustomPlot *plot)
@@ -119,6 +126,7 @@ void PlotThread::stop()
 
 void PlotThread::handleRefreshRateChanged(CustomPlot *plot)
 {
+    qDebug() << "handleRefreshRateChanged触发" << this ;
     removePlot(plot);
     addPlot(plot);
 }

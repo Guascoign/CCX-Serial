@@ -12,6 +12,7 @@
 #include <QWidget>
 #include "serialthread.h"
 #include "plotthread.h"
+#include "datahandelthread.h"
 
 #define TIMEOUT1S 1000
 #define TIMEOUT2S 2000
@@ -53,15 +54,16 @@ private slots:
     void on_SEND_pushButton_clicked();//发送信号槽
     void on_Opem_COM_pushButton_clicked();//打开串口信号槽
     void on_Serial_number_comboBox_clicked();//串口号信号槽
-    /********信号处理*********/
-    void ProcessData(QByteArray Recvbuff);//处理串口协议 待分离到单独线程防止高速串口接收处理导致ui卡顿
     /********图表*********/
     void on_AddChart_pushButton_clicked();//添加图表
     void on_DeleteChart_pushButton_clicked();//删除图表
+    void handleProcessedData(const QStringList &dataList);
 
 signals:
     //信号量
     void SendData(QByteArray data);//串口接收到的数据
+    void SendDataToProcessingThread(const QByteArray &data); // 发送数据到数据处理线程的信号
+
 private:
     Ui::Widget *ui;
     /********串口*********/
@@ -89,6 +91,8 @@ private:
     bool send_format_Flag = false;//发送格式化标志
     /********图表*********/
     CustomPlot *customPlot; // 添加 customPlot 成员变量
+    PlotThread *plotThread; // 添加 plotThread 成员变量
     int dataCount=0;
+    DataHandleThread *dataHandleThread; // 添加数据处理线程成员变量
 };
 #endif // WIDGET_H

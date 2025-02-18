@@ -1,3 +1,11 @@
+/********************************************************************************
+    * 文件名称 customplot.h
+    * 版     本：V1.0
+    * 编写日期 ：2025-02-18
+    * 功     能：重写QCustmPlot
+*********************************************************************************
+V1.0 2025-02-18 First release @ZM
+*********************************************************************************/
 #ifndef CUSTOMPLOT_H
 #define CUSTOMPLOT_H
 
@@ -66,6 +74,8 @@ private slots:
 signals:
     void refreshRateChanged(CustomPlot *plot);
     void trackingModeChanged(CustomPlot *plot);
+    void plotConstructed(CustomPlot *plot);
+    void deleteplot(CustomPlot *plot);
 
 private:
     QAction *toggleGraphNameAction;

@@ -16,16 +16,25 @@
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Widget)
+    , dataHandleThread(new DataHandleThread) // 初始化数据处理线程
 {
     ui->setupUi(this);
     this->setLayout(ui->gridLayoutGlobal);//布局缩放绑定
 
     System_Init();//系统初始化
+
 }
 
 Widget::~Widget()
 {
     delete ui;
+    dataHandleThread->quit(); // 退出数据处理线程
+    dataHandleThread->wait(); // 等待线程退出
+    delete dataHandleThread; // 删除数据处理线程
+
+    plotThread->quit();
+    plotThread->wait();
+    delete plotThread;
 }
 
 // 系统初始化
@@ -50,7 +59,10 @@ void Widget::System_Init()
     ui->FlowControl_comboBox->setCurrentIndex(0);// None
     ui->AUTOSEND_time_spinBox->setValue(1000); // 初始化自动发送时间为1000ms
     animateProgressBar(10, 20, 100);
+//---------------------数据处理线程初始化----------------------
 
+    dataHandleThread->start();
+    connect(dataHandleThread, &DataHandleThread::ProcessedData, this, &Widget::handleProcessedData);
 //---------------------串口初始化----------------------
     connect(ui->Serial_number_comboBox,SIGNAL(clicked()),this,SLOT(Update_SerialPort()));//点击串口下拉框刷新串口
     Update_SerialPort();
@@ -58,16 +70,9 @@ void Widget::System_Init()
 
 //---------------------图表初始化----------------------
     //ui->Wave_ChartView
-    ui->Wave_ChartView->addGraph();
-    ui->Wave_ChartView->graph(0)->setPen(QPen(Qt::blue));
-    ui->Wave_ChartView->addGraph();
-    ui->Wave_ChartView->graph(1)->setPen(QPen(Qt::red));
-    
-    ui->Wave_ChartView->yAxis->setRange(-10, 10); // 设置 Y 轴范围
-    //启动刷新线
-    PlotThread *plotThread = new PlotThread(this);//开启图像刷新线程
+    //启动刷新线程
+    plotThread = new PlotThread(this);
     plotThread->start();
-    plotThread->addPlot(ui->Wave_ChartView);//添加刷新图像的句柄
     animateProgressBar(30, 100, 100);
 }
 
@@ -75,7 +80,10 @@ void Widget::on_AddChart_pushButton_clicked() // 添加图表
 {
     // 创建一个新的 CustomPlot 对象
     CustomPlot *newPlot = new CustomPlot(this);
-
+    connect(newPlot, &CustomPlot::plotConstructed, plotThread, &PlotThread::addPlot);
+    emit newPlot->plotConstructed(newPlot); // 触发信号
+    qDebug() << "创建图表句柄：" << newPlot ;
+    
     // 获取当前布局中的图表数量
     int count = ui->gridLayout_6->count();
 
@@ -99,6 +107,11 @@ void Widget::on_DeleteChart_pushButton_clicked() // 删除图表
         if (item) {
             QWidget *widget = item->widget();
             if (widget) {
+                CustomPlot *plot = qobject_cast<CustomPlot *>(widget);//转换类型
+                if (plot) {
+                    connect(plot, &CustomPlot::deleteplot, plotThread, &PlotThread::removePlot);//需要先删除线程中的定时器，否则定时器句柄溢出
+                    emit plot->deleteplot(plot); // 触发信号
+                }
                 widget->deleteLater();
             }
             delete item;
@@ -180,51 +193,17 @@ void Widget::on_AUTOSEND_pushButton_clicked()
     
 }
 
-//接收数据处理槽函数 单帧图表数据 data0,data1
-void Widget::ProcessData(QByteArray Recvbuff)
-{
-    // 假设数据格式为 "data0,data1"
-    qDebug() << "接收到的数据：" << Recvbuff;
-
-    QList<QByteArray> dataList = Recvbuff.split(',');
-
-    if (dataList.size() == 2) {
-        bool ok0, ok1;
-        double data0 = dataList[0].toDouble(&ok0);
-        double data1 = dataList[1].toDouble(&ok1);
-        static QTime timeStart = QTime::currentTime();
-        if (ok0 && ok1) {
-            dataCount++;
-            ui->Wave_ChartView->x_key = timeStart.msecsTo(QTime::currentTime())/1000.0;
-            ui->Wave_ChartView->graph(0)->addData(ui->Wave_ChartView->x_key, data0);
-            ui->Wave_ChartView->graph(1)->addData(ui->Wave_ChartView->x_key, data1);
-        } else {
-            qDebug() << "数据解析失败：" << "data0:" << dataList[0] << ", data1:" << dataList[1];
-        }
-    } else {
-        qDebug() << "数据格式错误：" << Recvbuff;
-    }
-}
 
 // 接收数据的槽函数
 void Widget::RcvData(QByteArray RecvBuff)
 {
     QString     stringdata;
-
-  
     stringdata = QString(RecvBuff);   /*ascii显示*/
-    
     ui->recv_textEdit->insertPlainText(stringdata);
     ui->recv_textEdit->moveCursor(QTextCursor::End);
     dataRxNumber += RecvBuff.length();
     ui->Rx_label->setText(QString("Rx: %1 bytes").arg(dataRxNumber));
-
-
-
     RecvBuff.clear();//清除串口数据
-
-    
-
 }
 
 // 发送数据
@@ -330,7 +309,8 @@ void Widget::on_Opem_COM_pushButton_clicked()
             // 获取串口数据
             connect(this, &Widget::SendData, Serial, &ComSerialPort::SendSerialData, Qt::AutoConnection);//线程发送数据
             connect(Serial, SIGNAL(UpdateData(QByteArray)), this, SLOT(RcvData(QByteArray)), Qt::AutoConnection);//线程接收数据
-            connect(Serial, SIGNAL(UpdateData(QByteArray)), this, SLOT(ProcessData(QByteArray)), Qt::AutoConnection);// 接收数据处理
+            connect(Serial, &ComSerialPort::DataToProcessingThread, this, &Widget::SendDataToProcessingThread);// 连接串口数据到数据处理线程
+            connect(this, &Widget::SendDataToProcessingThread, dataHandleThread, &DataHandleThread::handleData);
             connect(Serial, &ComSerialPort::UpdateError, this, &Widget::updateInfoLabel);//串口错误信号
             ui->Opem_COM_pushButton->setText("关闭串口"); // 更新按钮文本
             ui->Opem_COM_pushButton->setChecked(true);
@@ -447,3 +427,10 @@ void Widget::on_Auto_roll_pushButton_clicked()
 }
 
 
+void Widget::handleProcessedData(const QStringList &dataList)
+{
+    ui->listWidget->clear();
+    for (const QString &data : dataList) {
+        ui->listWidget->addItem(data);
+    }
+}

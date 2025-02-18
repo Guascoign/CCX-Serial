@@ -19,7 +19,7 @@ include_directories(${CMAKE_SOURCE_DIR}/Resources)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 COMPONENTS SerialPort REQUIRED)#串口
-find_package(Qt6 COMPONENTS Charts REQUIRED)#图表
+find_package(Qt6 COMPONENTS Charts REQUIRED)#图表（弃用）
 find_package(Qt6 REQUIRED COMPONENTS PrintSupport)#qcustomplot
 
 
@@ -39,12 +39,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Code/serialthread.cpp Code/serialthread.h
         Code/plotthread.cpp Code/plotthread.h
         Code/customplot.cpp Code/customplot.h
+        Code/datahandelthread.cpp Code/datahandelthread.h
         External/qcustomplot.cpp External/qcustomplot.h
-
         Resources/res.qrc
     )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")#qcustomplot防止编译过大报错
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET COM APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
@@ -65,8 +65,8 @@ endif()
 
 target_link_libraries(COM PRIVATE Qt6::PrintSupport)#qcustomplot
 target_link_libraries(COM PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(COM PRIVATE Qt6::SerialPort)
-target_link_libraries(COM PRIVATE Qt6::Charts)
+target_link_libraries(COM PRIVATE Qt6::SerialPort)#串口
+target_link_libraries(COM PRIVATE Qt6::Charts)#图表（弃用）
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

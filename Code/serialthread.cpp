@@ -1,5 +1,12 @@
+/********************************************************************************
+    * 文件名称 serialthread.cpp
+    * 版     本：V1.0
+    * 编写日期 ：2025-02-18
+    * 功     能：串口收发线程
+*********************************************************************************
+V1.0 2025-02-18 First release @ZM
+*********************************************************************************/
 #include "serialthread.h"
-
 
 ComSerialPort::ComSerialPort(QString PortName, qint32 BaudRate, qint32* state, QObject *parent) : QObject(parent)
 {
@@ -13,7 +20,7 @@ ComSerialPort::ComSerialPort(QString PortName, qint32 BaudRate, qint32* state, Q
     this->moveToThread(thread);
     Serial->moveToThread(thread);
     thread->start();
-
+    //线程完成后销毁
     connect(thread, &QThread::finished, this, &QObject::deleteLater);
     // 连接串口错误信号
     connect(Serial, &QSerialPort::errorOccurred, this, &ComSerialPort::handleSerialError);
@@ -86,19 +93,21 @@ bool ComSerialPort::InitSerial(QString portname,qint32 BaudRate)
 
 void ComSerialPort::CloseSerial()
 {
-
     Serial->clear();
     Serial->close();
-
 }
-
+//接收串口数据，ComSerialPort->> ui 发送至ui打印到窗口
+//                      |---->> datahandelthread 发送到数据处理线程
 void ComSerialPort::RcvData()
 {
     QByteArray buffer = Serial->readAll();
-    qDebug() << "接收数据线程ID："<< QThread::currentThreadId() << "接收：" << buffer;
-    emit  UpdateData(buffer);
+    qDebug() << "接收数据线程ID：" << QThread::currentThreadId() << "接收：" << buffer;
+    emit UpdateData(buffer); // 发送到 UI
+    emit DataToProcessingThread(buffer); // 发送到数据处理线程
+    
 }
 
+//发送串口数据，ui->> ComSerialPort
 void ComSerialPort::SendSerialData(QByteArray data)
 {
     qDebug() << "发送数据线程ID："<< QThread::currentThreadId() << "发送：" << data;
