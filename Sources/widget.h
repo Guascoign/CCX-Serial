@@ -72,6 +72,7 @@ private:
     QString     SendTextStr;//发送文本
     quint32     dataRxNumber = 0 ;      // 记录Rx数据量
     quint32     dataTxNumber = 0 ;      // 记录Rx数据量
+    int clearflag = 0;
     /********  *********/
     void updateSizeLabel();//更新数据量
     void Update_RTC();//更新RTC
@@ -92,7 +93,9 @@ private:
     /********图表*********/
     CustomPlot *customPlot; // 添加 customPlot 成员变量
     PlotThread *plotThread; // 添加 plotThread 成员变量
-    int dataCount=0;
+    QList<CustomPlot*> charts;
+    int datacount=0;
+    bool datainit = false;
     DataHandleThread *dataHandleThread; // 添加数据处理线程成员变量
 };
 #endif // WIDGET_H

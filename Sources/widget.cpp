@@ -40,8 +40,8 @@ Widget::~Widget()
 // 系统初始化
 void Widget::System_Init()
 {
-    qDebug() << "Qt version:" << QT_VERSION_STR;
-    qDebug() << "主线程ID：" << QThread::currentThreadId();
+    ////qDebug() << "Qt version:" << QT_VERSION_STR;
+    //qDebug() << "主线程ID：" << QThread::currentThreadId();
 //----------------------时间初始化----------------------
     Update_RTC();//更新时间,打开定时器
     // 设置定时器每秒更新一次时间
@@ -73,6 +73,7 @@ void Widget::System_Init()
     //启动刷新线程
     plotThread = new PlotThread(this);
     plotThread->start();
+    on_AddChart_pushButton_clicked();
     animateProgressBar(30, 100, 100);
 }
 
@@ -82,7 +83,7 @@ void Widget::on_AddChart_pushButton_clicked() // 添加图表
     CustomPlot *newPlot = new CustomPlot(this);
     connect(newPlot, &CustomPlot::plotConstructed, plotThread, &PlotThread::addPlot);
     emit newPlot->plotConstructed(newPlot); // 触发信号
-    qDebug() << "创建图表句柄：" << newPlot ;
+    //qDebug() << "创建图表句柄：" << newPlot ;
     
     // 获取当前布局中的图表数量
     int count = ui->gridLayout_6->count();
@@ -197,13 +198,19 @@ void Widget::on_AUTOSEND_pushButton_clicked()
 // 接收数据的槽函数
 void Widget::RcvData(QByteArray RecvBuff)
 {
-    QString     stringdata;
+    QString stringdata;
     stringdata = QString(RecvBuff);   /*ascii显示*/
     ui->recv_textEdit->insertPlainText(stringdata);
     ui->recv_textEdit->moveCursor(QTextCursor::End);
     dataRxNumber += RecvBuff.length();
     ui->Rx_label->setText(QString("Rx: %1 bytes").arg(dataRxNumber));
-    RecvBuff.clear();//清除串口数据
+    RecvBuff.clear(); // 清除串口数据
+
+    // 检查 dataRxNumber 是否达到 5000
+    if (dataRxNumber >= 5000 * clearflag) {
+        ui->recv_textEdit->clear(); // 清空接收区
+        clearflag++;
+    }
 }
 
 // 发送数据
@@ -275,14 +282,14 @@ void Widget::on_Addons_checkBox_clicked(bool checked)
         ui->FOMAT_groupBox_2->setMaximumWidth(800);
         ui->SEND_groupBox->setMaximumWidth(800);
         //打印 Addons_checkBox->on/off
-        qDebug() <<"Addons_checkBox->" << checked << Qt::endl;
+        //qDebug() <<"Addons_checkBox->" << checked << Qt::endl;
     }
     else{
         ui->Addons_groupBox->hide();
         ui->REV_groupBox->setMaximumWidth(16777215);
         ui->FOMAT_groupBox_2->setMaximumWidth(16777215);
         ui->SEND_groupBox->setMaximumWidth(16777215);
-        qDebug() <<"Addons_checkBox->" << checked << Qt::endl;
+        //qDebug() <<"Addons_checkBox->" << checked << Qt::endl;
     }
 }
 
@@ -430,7 +437,32 @@ void Widget::on_Auto_roll_pushButton_clicked()
 void Widget::handleProcessedData(const QStringList &dataList)
 {
     ui->listWidget->clear();
-    for (const QString &data : dataList) {
-        ui->listWidget->addItem(data);
+    int count = ui->gridLayout_6->count();
+    QLayoutItem *item = ui->gridLayout_6->itemAt(count - 1);
+    QWidget *widget = item->widget();
+    CustomPlot *lastChart = qobject_cast<CustomPlot *>(widget);
+    // for (const QString &data : dataList) {
+    //     ui->listWidget->addItem(data);
+    // }
+    if (!datainit) {
+        for (int i = 0; i < dataList.size(); ++i) {
+            lastChart->addGraph();
+            lastChart->graph(i)->setPen(QPen(QColor(QRandomGenerator::global()->bounded(256), 
+                                                    QRandomGenerator::global()->bounded(256), 
+                                                    QRandomGenerator::global()->bounded(256))));
+        }
+        datainit = true;
+        QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
+        timeTicker->setTimeFormat("%h:%m:%s");
+        lastChart->xAxis->setTicker(timeTicker);
+    }
+    static QTime timeStart = QTime::currentTime();
+    // 将处理后的数据填入最后一个图表
+    lastChart->x_key = timeStart.msecsTo(QTime::currentTime())/1000.0; // 使用当前时间作为 key
+    for (int i = 0; i < dataList.size(); ++i) {
+        double value = dataList[i].toDouble();
+        if (i < lastChart->graphCount()) {
+            lastChart->graph(i)->addData(lastChart->x_key, value); // 添加数据到图表
+        }
     }
 }

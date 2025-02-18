@@ -10,7 +10,7 @@ V1.0 2025-02-18 First release @ZM
 #include <QDebug>
 DataHandleThread::DataHandleThread(QObject *parent) : QThread(parent)
 {
-    qDebug() << "数处理线程ID：" << QThread::currentThreadId();
+    //qDebug() << "数处理线程ID：" << QThread::currentThreadId();
 }
 
 DataHandleThread::~DataHandleThread()
@@ -23,7 +23,7 @@ void DataHandleThread::handleData(const QByteArray &data)
     QStringList dataList = dataStr.split(",");
     
     // 显示接收到的数据
-    qDebug() << "数据列表：" << dataList;
+    //qDebug() << "数据列表：" << dataList;
 
     emit ProcessedData(dataList);
 }

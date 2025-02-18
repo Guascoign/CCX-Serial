@@ -101,7 +101,7 @@ void ComSerialPort::CloseSerial()
 void ComSerialPort::RcvData()
 {
     QByteArray buffer = Serial->readAll();
-    qDebug() << "接收数据线程ID：" << QThread::currentThreadId() << "接收：" << buffer;
+    //qDebug() << "接收数据线程ID：" << QThread::currentThreadId() << "接收：" << buffer;
     emit UpdateData(buffer); // 发送到 UI
     emit DataToProcessingThread(buffer); // 发送到数据处理线程
     
@@ -110,7 +110,7 @@ void ComSerialPort::RcvData()
 //发送串口数据，ui->> ComSerialPort
 void ComSerialPort::SendSerialData(QByteArray data)
 {
-    qDebug() << "发送数据线程ID："<< QThread::currentThreadId() << "发送：" << data;
+    //qDebug() << "发送数据线程ID："<< QThread::currentThreadId() << "发送：" << data;
     // 接收GUI数据并发送
     Serial->write(data);
     Serial->flush();

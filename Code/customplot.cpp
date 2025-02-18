@@ -356,7 +356,7 @@ void CustomPlot::setRefreshRate(Refresh_rate rate)
 {
     this->rate = rate;
     emit refreshRateChanged(this);
-    qDebug() << "setRefreshRate触发" << this ;
+    //qDebug() << "setRefreshRate触发" << this ;
 }
 
 void CustomPlot::setTrackingMode(Track_mode mode)
