@@ -4,6 +4,8 @@
 #include <QThread>
 #include <QObject>
 #include <QSerialPort>
+#include <QSerialPortInfo>
+#include <QDebug>
 
 
 class ComSerialPort : public QObject
@@ -17,8 +19,8 @@ public:
     void handleSerialError(QSerialPort::SerialPortError error);
 
 signals:
-    void UpdateData(QByteArray data);
-    void UpdateError(const QString &errorMessage);
+    void UpdateData(QByteArray data);//上传串口接收到的数据
+    void UpdateError(const QString &errorMessage);//上传串口错误
 
 public slots:
     void RcvData();

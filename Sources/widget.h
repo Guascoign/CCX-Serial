@@ -1,8 +1,6 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
-#include <QWidget>
-#include "serialport.h"
 #include <QDateTime>//时间
 #include <QTimer>//定时器
 #include <QElapsedTimer>//计时器
@@ -11,7 +9,9 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include <qcustomplot.h>
-#include "refreshthread.h"
+#include <QWidget>
+#include "serialthread.h"
+#include "plotthread.h"
 
 #define TIMEOUT1S 1000
 #define TIMEOUT2S 2000
@@ -35,24 +35,30 @@ public:
     virtual void timerEvent(QTimerEvent *event);//定时器事件
 
 private slots:
-    void on_Addons_checkBox_clicked(bool checked);//打开/关闭插件信号槽
-    void on_AUTOSEND_pushButton_clicked();//自动发送信号槽
-    void on_SEND_pushButton_clicked();//发送信号槽
+    /********界面*********/
     void on_Clear_recvbuf_pushButton_clicked();//清空接收区信号槽
     void on_Clear_sendbuf_pushButton_clicked();//清空发送区信号槽
     void on_Save_pushButton_clicked();//保存数据信号槽
-    void on_Opem_COM_pushButton_clicked();//打开串口信号槽
-    void on_Serial_number_comboBox_clicked();//串口号信号槽
     void on_time_checkBox_clicked(bool checked);//时间显示信号槽
     void on_auto_reline_pushButton_clicked();//自动换行信号槽
     void on_recv_format_pushButton_clicked();//接收区格式化信号槽
     void on_send_format_pushButton_clicked();//发送区格式化信号槽
     void on_Auto_reconnect_checkBox_clicked(bool checked);//自动重连信号槽
-    void RcvData(QByteArray RecvBuff);
     void on_Auto_roll_pushButton_clicked();//自动滚动信号槽
+    /********串口*********/
+    void RcvData(QByteArray RecvBuff);
     void updateInfoLabel(const QString &errorMessage);//串口错误信号上报槽
+    void on_Addons_checkBox_clicked(bool checked);//打开/关闭插件信号槽
+    void on_AUTOSEND_pushButton_clicked();//自动发送信号槽
+    void on_SEND_pushButton_clicked();//发送信号槽
+    void on_Opem_COM_pushButton_clicked();//打开串口信号槽
+    void on_Serial_number_comboBox_clicked();//串口号信号槽
+    /********信号处理*********/
+    void ProcessData(QByteArray Recvbuff);//处理串口协议 分离出数据到图表渲染线程
+
 signals:
-    void SendData(QByteArray data);
+    //信号量
+    void SendData(QByteArray data);//串口接收到的数据
 private:
     Ui::Widget *ui;
     /********串口*********/
@@ -81,6 +87,6 @@ private:
     /********图表*********/
     CustomPlot *customPlot; // 添加 customPlot 成员变量
     QTimer dataTimer;
-    RefreshThread *refreshThread; // 添加刷新线程成员变量
+    int dataCount=0;
 };
 #endif // WIDGET_H

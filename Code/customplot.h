@@ -3,18 +3,39 @@
 
 #include <QWidget>
 #include <qcustomplot.h>
-#include "refreshthread.h"
+#include "plotthread.h"
 
-class RefreshThread; 
+enum Refresh_rate{//刷新率设置
+    Stop,       //停止
+    Fast,       //尽可能快
+    Rate_10ms,  //10ms刷新一次
+    Rate_20ms,
+    Rate_50ms,
+    Rate_100ms,
+    Rate_200ms,
+    Rate_500ms,
+    Rate_1s,
+    Rate_2s
+};
+
+enum Track_mode{//跟踪模式设置
+    Mode_None,//不跟踪波形
+    Mode_All,//波形全局缩放
+    Mode_2s,//只显示最后2s
+    Mode_5s,//只显示最后5s
+    Mode_10s//只显示最后10s
+};
 class CustomPlot : public QCustomPlot
 {
     Q_OBJECT
 
 public:
+
     explicit CustomPlot(QWidget *parent = nullptr);
     ~CustomPlot(); // 声明析构函数
     void setTrackingMode(int mode); 
-
+    Track_mode mode = Mode_5s;
+    Refresh_rate rate = Fast;
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
@@ -32,7 +53,9 @@ private slots:
     void updateGraphLegend();
     void editTitle();
     void changeSelectedGraphWidth(int width);
-    void setRefreshRate(int interval);
+
+signals:
+    
 
 private:
     QAction *toggleGraphNameAction;
@@ -44,7 +67,7 @@ private:
     QAction *toggleMeasurementAction;
     QMenu *changeSelectedGraphWidthMenu;
     QMenu *refreshRateMenu;
-    QMenu *trackingModeMenu;
+    QMenu *trackModeMenu;
 
     bool measurementEnabled;
     QCPItemTracer *tracer;
@@ -52,8 +75,6 @@ private:
     QCPItemLine *horizontalLine;
     QCPItemText *measurementText;
     QCPTextElement *title;
-    RefreshThread *refreshThread;
-    int trackingMode; // 使用整数代替枚举
 };
 
 #endif // CUSTOMPLOT_H

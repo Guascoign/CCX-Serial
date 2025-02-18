@@ -36,10 +36,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         Code/ncombobox.cpp Code/ncombobox.h
-        Code/serialport.cpp Code/serialport.h
+        Code/serialthread.cpp Code/serialthread.h
+        Code/plotthread.cpp Code/plotthread.h
         Code/customplot.cpp Code/customplot.h
-        Code/refreshthread.cpp Code/refreshthread.h
         External/qcustomplot.cpp External/qcustomplot.h
+
         Resources/res.qrc
     )
 

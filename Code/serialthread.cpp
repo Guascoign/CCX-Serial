@@ -1,6 +1,4 @@
-#include "serialport.h"
-#include <QSerialPortInfo>
-#include <QDebug>
+#include "serialthread.h"
 
 
 ComSerialPort::ComSerialPort(QString PortName, qint32 BaudRate, qint32* state, QObject *parent) : QObject(parent)

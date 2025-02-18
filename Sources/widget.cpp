@@ -10,9 +10,8 @@
 #include <QSerialPortInfo>
 #include <QStandardItemModel>
 #include <QInputDialog>
-#include <qcustomplot.h>
 #include "customplot.h"
-#include "refreshthread.h"
+#include "plotthread.h"
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -22,7 +21,6 @@ Widget::Widget(QWidget *parent)
     this->setLayout(ui->gridLayoutGlobal);//布局缩放绑定
 
     System_Init();//系统初始化
-    dataTimer.start(1000); // 每秒更新一次图表
 }
 
 Widget::~Widget()
@@ -34,6 +32,7 @@ Widget::~Widget()
 void Widget::System_Init()
 {
     qDebug() << "Qt version:" << QT_VERSION_STR;
+    qDebug() << "主线程ID：" << QThread::currentThreadId();
 //----------------------时间初始化----------------------
     Update_RTC();//更新时间,打开定时器
     // 设置定时器每秒更新一次时间
@@ -59,17 +58,23 @@ void Widget::System_Init()
 
 //---------------------图表初始化----------------------
     //ui->Wave_ChartView
-    
-    ui->Wave_ChartView->addGraph(); // graph 0
-    ui->Wave_ChartView->addGraph(); // graph 1
-    ui->Wave_ChartView->xAxis->setLabel("Time (s)");
-    ui->Wave_ChartView->yAxis->setLabel("Value");
-
+    ui->Wave_ChartView->addGraph();
+    ui->Wave_ChartView->graph(0)->setPen(QPen(Qt::blue));
+    ui->Wave_ChartView->addGraph();
+    ui->Wave_ChartView->graph(1)->setPen(QPen(Qt::red));
+    // 设置 X 轴为时间轴
+    QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
+    timeTicker->setTimeFormat("%h:%m:%s");
+    ui->Wave_ChartView->xAxis->setTicker(timeTicker);
+    ui->Wave_ChartView->yAxis->setRange(-10, 10); // 设置 Y 轴范围
+    //启动刷新线
+    PlotThread *plotThread = new PlotThread(this);//开启图像刷新线程
+    plotThread->start();
+    plotThread->addPlot(ui->Wave_ChartView);//添加刷新图像的句柄
     animateProgressBar(30, 100, 100);
 }
 
-
-
+//点击串口刷新串口列表
 void Widget::on_Serial_number_comboBox_clicked()
 {
     Update_SerialPort();
@@ -140,6 +145,33 @@ void Widget::on_AUTOSEND_pushButton_clicked()
     
 }
 
+//接收数据处理槽函数 单帧图表数据 data0,data1
+void Widget::ProcessData(QByteArray Recvbuff)
+{
+    // 假设数据格式为 "data0,data1"
+    qDebug() << "接收到的数据：" << Recvbuff;
+
+    QList<QByteArray> dataList = Recvbuff.split(',');
+
+    if (dataList.size() == 2) {
+        bool ok0, ok1;
+        double data0 = dataList[0].toDouble(&ok0);
+        double data1 = dataList[1].toDouble(&ok1);
+        static QTime timeStart = QTime::currentTime();
+        if (ok0 && ok1) {
+            dataCount++;
+            double key = timeStart.msecsTo(QTime::currentTime())/1000.0;
+            ui->Wave_ChartView->graph(0)->addData(key, data0);
+            ui->Wave_ChartView->graph(1)->addData(key, data1);
+            ui->Wave_ChartView->xAxis->setRange(key - 100, key); // 动态调整 X 轴范围 显示最后100S
+        } else {
+            qDebug() << "数据解析失败：" << "data0:" << dataList[0] << ", data1:" << dataList[1];
+        }
+    } else {
+        qDebug() << "数据格式错误：" << Recvbuff;
+    }
+}
+
 // 接收数据的槽函数
 void Widget::RcvData(QByteArray RecvBuff)
 {
@@ -153,22 +185,9 @@ void Widget::RcvData(QByteArray RecvBuff)
     dataRxNumber += RecvBuff.length();
     ui->Rx_label->setText(QString("Rx: %1 bytes").arg(dataRxNumber));
 
-    // 解析接收到的数据并更新图表 格式data0,data1
-    QStringList dataList = stringdata.split(",");
-    if (dataList.size() == 2) {
-        bool ok0, ok1;
-        double data0 = dataList[0].toDouble(&ok0);
-        double data1 = dataList[1].toDouble(&ok1);
-        if (ok0 && ok1) {
-            double key = QDateTime::currentDateTime().toSecsSinceEpoch(); // x轴为时间（秒）
-            ui->Wave_ChartView->graph(0)->addData(key, data0);
-            ui->Wave_ChartView->graph(1)->addData(key, data1);
-            ui->Wave_ChartView->xAxis->setRange(key - 10, key); // 显示最近60秒的数据
-            ui->Wave_ChartView->replot();
-        }
-    }
 
-    RecvBuff.clear();
+
+    RecvBuff.clear();//清除串口数据
 
     
 
@@ -254,7 +273,6 @@ void Widget::on_Addons_checkBox_clicked(bool checked)
     }
 }
 
-
 //串口错误信号上报槽
 void Widget::updateInfoLabel(const QString &errorMessage)
 {
@@ -262,11 +280,9 @@ void Widget::updateInfoLabel(const QString &errorMessage)
     ui->info_label->setText(errorMessage);
 }
 
-
 // 打开串口
 void Widget::on_Opem_COM_pushButton_clicked()
 {
-    qDebug() << "主线程ID：" << QThread::currentThreadId();
     if(Serial_State == 0){
         qint32 state = 0; // 串口状态
         Serial = new ComSerialPort(ui->Serial_number_comboBox->currentText(), ui->BaudRate_comboBox->currentText().toInt(), &state);
@@ -280,6 +296,7 @@ void Widget::on_Opem_COM_pushButton_clicked()
             // 获取串口数据
             connect(this, &Widget::SendData, Serial, &ComSerialPort::SendSerialData, Qt::AutoConnection);//线程发送数据
             connect(Serial, SIGNAL(UpdateData(QByteArray)), this, SLOT(RcvData(QByteArray)), Qt::AutoConnection);//线程接收数据
+            connect(Serial, SIGNAL(UpdateData(QByteArray)), this, SLOT(ProcessData(QByteArray)), Qt::AutoConnection);// 接收数据处理
             connect(Serial, &ComSerialPort::UpdateError, this, &Widget::updateInfoLabel);//串口错误信号
             ui->Opem_COM_pushButton->setText("关闭串口"); // 更新按钮文本
             ui->Opem_COM_pushButton->setChecked(true);

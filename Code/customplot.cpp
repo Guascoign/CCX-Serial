@@ -1,5 +1,5 @@
 #include "customplot.h"
-#include "refreshthread.h"
+#include "plotthread.h"
 #include <QKeyEvent>
 #include <QMenu>
 #include <QAction>
@@ -11,7 +11,7 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 
-CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnabled(false), refreshThread(nullptr), trackingMode(2)
+CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnabled(false)
 {
     setInteraction(QCP::iRangeDrag, true); // 启用左键拖拽
     setInteraction(QCP::iRangeZoom, true); // 启用滚轮放大缩小
@@ -113,47 +113,12 @@ CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnable
         }
     });
 
-    refreshRateMenu = new QMenu("设置刷新速率", this);
-    QAction *noRefreshAction = refreshRateMenu->addAction("不刷新");
-    QAction *refresh10msAction = refreshRateMenu->addAction("10ms");
-    QAction *refresh20msAction = refreshRateMenu->addAction("20ms");
-    QAction *refresh50msAction = refreshRateMenu->addAction("50ms");
-    QAction *refresh100msAction = refreshRateMenu->addAction("100ms");
-    QAction *refresh200msAction = refreshRateMenu->addAction("200ms");
-    QAction *refresh500msAction = refreshRateMenu->addAction("500ms");
-    QAction *refresh1sAction = refreshRateMenu->addAction("1s");
-    QAction *refresh2sAction = refreshRateMenu->addAction("2s");
-
-    connect(noRefreshAction, &QAction::triggered, [this]() { setRefreshRate(0); });
-    connect(refresh10msAction, &QAction::triggered, [this]() { setRefreshRate(10); });
-    connect(refresh20msAction, &QAction::triggered, [this]() { setRefreshRate(20); });
-    connect(refresh50msAction, &QAction::triggered, [this]() { setRefreshRate(50); });
-    connect(refresh100msAction, &QAction::triggered, [this]() { setRefreshRate(100); });
-    connect(refresh200msAction, &QAction::triggered, [this]() { setRefreshRate(200); });
-    connect(refresh500msAction, &QAction::triggered, [this]() { setRefreshRate(500); });
-    connect(refresh1sAction, &QAction::triggered, [this]() { setRefreshRate(1000); });
-    connect(refresh2sAction, &QAction::triggered, [this]() { setRefreshRate(2000); });
-
-    trackingModeMenu = new QMenu("跟踪模式", this);
-    QAction *noTrackingAction = trackingModeMenu->addAction("不跟踪");
-    QAction *globalTrackingAction = trackingModeMenu->addAction("全局跟踪");
-    QAction *last8PointsTrackingAction = trackingModeMenu->addAction("8S");
-
-    connect(noTrackingAction, &QAction::triggered, [this]() { setTrackingMode(0); });
-    connect(globalTrackingAction, &QAction::triggered, [this]() { setTrackingMode(1); });
-    connect(last8PointsTrackingAction, &QAction::triggered, [this]() { setTrackingMode(2); });
     
-
 }
 
 CustomPlot::~CustomPlot()
 {
-    if (refreshThread) {
-        refreshThread->stop();
-        refreshThread->wait();
-        delete refreshThread;
-        refreshThread = nullptr;
-    }
+    
 }
 
 void CustomPlot::keyPressEvent(QKeyEvent *event)
@@ -177,8 +142,6 @@ void CustomPlot::contextMenuEvent(QContextMenuEvent *event)
     if (selectedGraphs().isEmpty()) {
         menu.addAction(toggleGraphNameAction);
         menu.addAction(toggleMeasurementAction);
-        menu.addMenu(refreshRateMenu);
-        menu.addMenu(trackingModeMenu);
     } else {
         menu.addMenu(changeSelectedGraphWidthMenu);
         menu.addAction(toggleSelectedGraphVisibilityAction);
@@ -336,39 +299,12 @@ void CustomPlot::editTitle()
     }
 }
 
-void CustomPlot::setTrackingMode(int mode)
-{
-    trackingMode = mode;
-    if (refreshThread) {
-        refreshThread->setTrackingMode(mode);
-    }
-}
 
-void CustomPlot::setRefreshRate(int interval)
-{
-    if (refreshThread) {
-        refreshThread->stop();
-        refreshThread->wait();
-        delete refreshThread;
-        refreshThread = nullptr;
-    }
-
-    if (interval > 0) {
-        refreshThread = new RefreshThread(this, interval, this);
-        refreshThread->setTrackingMode(trackingMode);
-        refreshThread->start();
-    }
-}
 
 void CustomPlot::wheelEvent(QWheelEvent *event)
 {
-    if (trackingMode == 1 || trackingMode == 2) {
-        // 只缩放Y轴
-        double factor = event->angleDelta().y() > 0 ? 0.9 : 1.1;
-        yAxis->scaleRange(factor, yAxis->pixelToCoord(event->position().y()));
-        replot();
-    } else {
+    
         // 默认行为
         QCustomPlot::wheelEvent(event);
-    }
+    
 }
