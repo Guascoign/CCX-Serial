@@ -25,17 +25,26 @@ enum Track_mode{//跟踪模式设置
     Mode_5s,//只显示最后5s
     Mode_10s//只显示最后10s
 };
+
+enum XAxis_mode{//x轴格式
+    DTime,//变化时间
+    Time,//实时时间
+    Dot//点数
+};
 class CustomPlot : public QCustomPlot
 {
     Q_OBJECT
 
 public:
-
     explicit CustomPlot(QWidget *parent = nullptr);
     ~CustomPlot(); // 声明析构函数
     void setTrackingMode(int mode); 
     Track_mode mode = Mode_5s;
-    Refresh_rate rate = Fast;
+    Refresh_rate rate = Rate_10ms;
+    XAxis_mode X_mode = DTime;
+    double x_key = 0;//当前x轴坐标
+    void setRefreshRate(Refresh_rate rate);
+    void setTrackingMode(Track_mode mode);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
@@ -55,7 +64,8 @@ private slots:
     void changeSelectedGraphWidth(int width);
 
 signals:
-    
+    void refreshRateChanged(CustomPlot *plot);
+    void trackingModeChanged(CustomPlot *plot);
 
 private:
     QAction *toggleGraphNameAction;

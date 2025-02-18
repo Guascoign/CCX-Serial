@@ -62,10 +62,7 @@ void Widget::System_Init()
     ui->Wave_ChartView->graph(0)->setPen(QPen(Qt::blue));
     ui->Wave_ChartView->addGraph();
     ui->Wave_ChartView->graph(1)->setPen(QPen(Qt::red));
-    // 设置 X 轴为时间轴
-    QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
-    timeTicker->setTimeFormat("%h:%m:%s");
-    ui->Wave_ChartView->xAxis->setTicker(timeTicker);
+    
     ui->Wave_ChartView->yAxis->setRange(-10, 10); // 设置 Y 轴范围
     //启动刷新线
     PlotThread *plotThread = new PlotThread(this);//开启图像刷新线程
@@ -73,6 +70,44 @@ void Widget::System_Init()
     plotThread->addPlot(ui->Wave_ChartView);//添加刷新图像的句柄
     animateProgressBar(30, 100, 100);
 }
+
+void Widget::on_AddChart_pushButton_clicked() // 添加图表
+{
+    // 创建一个新的 CustomPlot 对象
+    CustomPlot *newPlot = new CustomPlot(this);
+
+    // 获取当前布局中的图表数量
+    int count = ui->gridLayout_6->count();
+
+    // 计算行和列的索引
+    int row = count / 2;
+    int col = count % 2;
+
+    // 将新图表添加到布局中的指定位置
+    ui->gridLayout_6->addWidget(newPlot, row, col);
+
+    // 重新布局
+    ui->gridLayout_6->update();
+}
+
+void Widget::on_DeleteChart_pushButton_clicked() // 删除图表
+{
+    // 获取布局中的最后一个图表
+    int count = ui->gridLayout_6->count();
+    if (count > 0) {
+        QLayoutItem *item = ui->gridLayout_6->takeAt(count - 1);
+        if (item) {
+            QWidget *widget = item->widget();
+            if (widget) {
+                widget->deleteLater();
+            }
+            delete item;
+        }
+        // 重新布局
+        ui->gridLayout_6->update();
+    }
+}
+
 
 //点击串口刷新串口列表
 void Widget::on_Serial_number_comboBox_clicked()
@@ -160,10 +195,9 @@ void Widget::ProcessData(QByteArray Recvbuff)
         static QTime timeStart = QTime::currentTime();
         if (ok0 && ok1) {
             dataCount++;
-            double key = timeStart.msecsTo(QTime::currentTime())/1000.0;
-            ui->Wave_ChartView->graph(0)->addData(key, data0);
-            ui->Wave_ChartView->graph(1)->addData(key, data1);
-            ui->Wave_ChartView->xAxis->setRange(key - 100, key); // 动态调整 X 轴范围 显示最后100S
+            ui->Wave_ChartView->x_key = timeStart.msecsTo(QTime::currentTime())/1000.0;
+            ui->Wave_ChartView->graph(0)->addData(ui->Wave_ChartView->x_key, data0);
+            ui->Wave_ChartView->graph(1)->addData(ui->Wave_ChartView->x_key, data1);
         } else {
             qDebug() << "数据解析失败：" << "data0:" << dataList[0] << ", data1:" << dataList[1];
         }

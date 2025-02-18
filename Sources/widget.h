@@ -54,7 +54,10 @@ private slots:
     void on_Opem_COM_pushButton_clicked();//打开串口信号槽
     void on_Serial_number_comboBox_clicked();//串口号信号槽
     /********信号处理*********/
-    void ProcessData(QByteArray Recvbuff);//处理串口协议 分离出数据到图表渲染线程
+    void ProcessData(QByteArray Recvbuff);//处理串口协议 待分离到单独线程防止高速串口接收处理导致ui卡顿
+    /********图表*********/
+    void on_AddChart_pushButton_clicked();//添加图表
+    void on_DeleteChart_pushButton_clicked();//删除图表
 
 signals:
     //信号量
@@ -86,7 +89,6 @@ private:
     bool send_format_Flag = false;//发送格式化标志
     /********图表*********/
     CustomPlot *customPlot; // 添加 customPlot 成员变量
-    QTimer dataTimer;
     int dataCount=0;
 };
 #endif // WIDGET_H

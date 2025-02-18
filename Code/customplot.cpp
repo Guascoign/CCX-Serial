@@ -19,6 +19,11 @@ CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnable
     setInteraction(QCP::iSelectLegend, true); // 启用选择图例
 
     legend->setVisible(true); // 默认显示图例
+    // 设置x轴和y轴标签字体大小
+    QFont labelFont = xAxis->labelFont();
+    labelFont.setPointSize(12); // 设置字体大小为12
+    xAxis->setLabelFont(labelFont);
+    yAxis->setLabelFont(labelFont);
     
     toggleGraphNameAction = new QAction("隐藏图例", this);
     connect(toggleGraphNameAction, &QAction::triggered, [this]() {
@@ -113,6 +118,41 @@ CustomPlot::CustomPlot(QWidget *parent) : QCustomPlot(parent), measurementEnable
         }
     });
 
+    refreshRateMenu = new QMenu("设置刷新率", this);
+    QAction *rateStopAction = refreshRateMenu->addAction("停止");
+    QAction *rateFastAction = refreshRateMenu->addAction("尽可能快");
+    QAction *rate10msAction = refreshRateMenu->addAction("10ms");
+    QAction *rate20msAction = refreshRateMenu->addAction("20ms");
+    QAction *rate50msAction = refreshRateMenu->addAction("50ms");
+    QAction *rate100msAction = refreshRateMenu->addAction("100ms");
+    QAction *rate200msAction = refreshRateMenu->addAction("200ms");
+    QAction *rate500msAction = refreshRateMenu->addAction("500ms");
+    QAction *rate1sAction = refreshRateMenu->addAction("1s");
+    QAction *rate2sAction = refreshRateMenu->addAction("2s");
+
+    connect(rateStopAction, &QAction::triggered, [this]() { setRefreshRate(Stop); });
+    connect(rateFastAction, &QAction::triggered, [this]() { setRefreshRate(Fast); });
+    connect(rate10msAction, &QAction::triggered, [this]() { setRefreshRate(Rate_10ms); });
+    connect(rate20msAction, &QAction::triggered, [this]() { setRefreshRate(Rate_20ms); });
+    connect(rate50msAction, &QAction::triggered, [this]() { setRefreshRate(Rate_50ms); });
+    connect(rate100msAction, &QAction::triggered, [this]() { setRefreshRate(Rate_100ms); });
+    connect(rate200msAction, &QAction::triggered, [this]() { setRefreshRate(Rate_200ms); });
+    connect(rate500msAction, &QAction::triggered, [this]() { setRefreshRate(Rate_500ms); });
+    connect(rate1sAction, &QAction::triggered, [this]() { setRefreshRate(Rate_1s); });
+    connect(rate2sAction, &QAction::triggered, [this]() { setRefreshRate(Rate_2s); });
+
+    trackModeMenu = new QMenu("设置跟踪模式", this);
+    QAction *modeNoneAction = trackModeMenu->addAction("不跟踪波形");
+    QAction *modeAllAction = trackModeMenu->addAction("波形全局缩放");
+    QAction *mode2sAction = trackModeMenu->addAction("只显示最后2s");
+    QAction *mode5sAction = trackModeMenu->addAction("只显示最后5s");
+    QAction *mode10sAction = trackModeMenu->addAction("只显示最后10s");
+
+    connect(modeNoneAction, &QAction::triggered, [this]() { setTrackingMode(Mode_None); });
+    connect(modeAllAction, &QAction::triggered, [this]() { setTrackingMode(Mode_All); });
+    connect(mode2sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_2s); });
+    connect(mode5sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_5s); });
+    connect(mode10sAction, &QAction::triggered, [this]() { setTrackingMode(Mode_10s); });
     
 }
 
@@ -149,6 +189,8 @@ void CustomPlot::contextMenuEvent(QContextMenuEvent *event)
         menu.addAction(toggleLineVisibilityAction);
         menu.addAction(toggleScatterPointsAction);
     }
+    menu.addMenu(refreshRateMenu);
+    menu.addMenu(trackModeMenu);
     menu.exec(event->globalPos());
 }
 
@@ -299,12 +341,22 @@ void CustomPlot::editTitle()
     }
 }
 
-
-
 void CustomPlot::wheelEvent(QWheelEvent *event)
 {
     
         // 默认行为
         QCustomPlot::wheelEvent(event);
     
+}
+
+void CustomPlot::setRefreshRate(Refresh_rate rate)
+{
+    this->rate = rate;
+    emit refreshRateChanged(this);
+}
+
+void CustomPlot::setTrackingMode(Track_mode mode)
+{
+    this->mode = mode;
+    emit trackingModeChanged(this);
 }

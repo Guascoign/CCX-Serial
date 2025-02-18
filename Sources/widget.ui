@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>371</width>
-    <height>188</height>
+    <width>801</width>
+    <height>513</height>
    </rect>
   </property>
   <property name="font">
@@ -369,204 +369,7 @@
       </property>
       <layout class="QGridLayout" name="gridLayout_6">
        <item row="1" column="0">
-        <widget class="QTabWidget" name="tabWidget">
-         <property name="font">
-          <font>
-           <family>优设标题黑</family>
-           <pointsize>11</pointsize>
-          </font>
-         </property>
-         <property name="tabPosition">
-          <enum>QTabWidget::North</enum>
-         </property>
-         <property name="currentIndex">
-          <number>0</number>
-         </property>
-         <property name="tabBarAutoHide">
-          <bool>false</bool>
-         </property>
-         <widget class="QWidget" name="tab1">
-          <attribute name="title">
-           <string>波形设置</string>
-          </attribute>
-          <layout class="QGridLayout" name="gridLayout_9">
-           <item row="1" column="0">
-            <widget class="QTableWidget" name="tableWidget"/>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="tab_2">
-          <attribute name="title">
-           <string>波形</string>
-          </attribute>
-          <layout class="QGridLayout" name="gridLayout_7">
-           <item row="0" column="0">
-            <widget class="QWidget" name="widget" native="true">
-             <layout class="QGridLayout" name="gridLayout_11">
-              <item row="0" column="0">
-               <widget class="CustomPlot" name="Wave_ChartView" native="true"/>
-              </item>
-              <item row="1" column="0">
-               <layout class="QHBoxLayout" name="horizontalLayout_16">
-                <item>
-                 <spacer name="horizontalSpacer_7">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-                <item>
-                 <widget class="QComboBox" name="FlowControl_comboBox_5">
-                  <item>
-                   <property name="text">
-                    <string>原始数据</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>图片</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>原始数据+图片</string>
-                   </property>
-                  </item>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="SEND_pushButton_2">
-                  <property name="font">
-                   <font>
-                    <family>优设标题黑</family>
-                    <pointsize>10</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>保存</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="tab">
-          <attribute name="title">
-           <string>FFT</string>
-          </attribute>
-          <layout class="QGridLayout" name="gridLayout_10">
-           <item row="0" column="0">
-            <widget class="QWidget" name="FFT_ChartView" native="true"/>
-           </item>
-           <item row="1" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_29">
-             <item>
-              <spacer name="horizontalSpacer_6">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_28">
-               <item>
-                <widget class="QCheckBox" name="FFT_enable_checkBox">
-                 <property name="font">
-                  <font>
-                   <family>优设标题黑</family>
-                   <pointsize>12</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>开启FFT</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="fft_Label">
-                 <property name="font">
-                  <font>
-                   <family>优设标题黑</family>
-                   <pointsize>12</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>选择波形</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="NComboBox" name="FFT_number_comboBox">
-                 <property name="minimumSize">
-                  <size>
-                   <width>180</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>180</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="SEND_pushButton_3">
-                 <property name="font">
-                  <font>
-                   <family>优设标题黑</family>
-                   <pointsize>12</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>单次计算</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="tab_5">
-          <attribute name="title">
-           <string>PID</string>
-          </attribute>
-          <layout class="QGridLayout" name="gridLayout_12">
-           <item row="0" column="0">
-            <widget class="QWidget" name="PID_ChartView" native="true"/>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="tab_3">
-          <attribute name="title">
-           <string>ModBUS</string>
-          </attribute>
-         </widget>
-         <widget class="QWidget" name="tab_4">
-          <attribute name="title">
-           <string>AT指令</string>
-          </attribute>
-         </widget>
-        </widget>
+        <widget class="CustomPlot" name="Wave_ChartView" native="true"/>
        </item>
       </layout>
      </widget>
@@ -1007,6 +810,30 @@
            </property>
            <property name="text">
             <string>自动重连</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="5" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_13">
+         <item>
+          <widget class="QPushButton" name="AddChart_pushButton">
+           <property name="mouseTracking">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>添加图表</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="DeleteChart_pushButton">
+           <property name="mouseTracking">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>删除图表</string>
            </property>
           </widget>
          </item>
